@@ -237,6 +237,9 @@ public class Beacon implements Parcelable {
         }
         mManufacturer = in.readInt();
         mBluetoothName = in.readString();
+        // This nonsense is needed because we can't do readDouble on null values.
+        // See: http://stackoverflow.com/a/10769887/1461050
+        mRunningAverageRssi = (Double) in.readValue(Double.class.getClassLoader());
         mParserIdentifier = in.readString();
         mMultiFrameBeacon = in.readByte() != 0;
     }
@@ -277,6 +280,18 @@ public class Beacon implements Parcelable {
     public void setRunningAverageRssi(double rssi) {
         mRunningAverageRssi = rssi;
         mDistance = null; // force calculation of accuracy and proximity next time they are requested
+    }
+
+    /**
+     * Gets the running average rssi, if available, otherwise get the latest rssi
+     */
+    public double getRunningAverageRssi() {
+        if (mRunningAverageRssi != null) {
+            return mRunningAverageRssi;
+        }
+        else {
+            return getRssi();
+        }
     }
 
     /**
@@ -558,6 +573,7 @@ public class Beacon implements Parcelable {
         }
         out.writeInt(mManufacturer);
         out.writeString(mBluetoothName);
+        out.writeValue(mRunningAverageRssi);
         out.writeString(mParserIdentifier);
         out.writeByte((byte) (mMultiFrameBeacon ? 1: 0));
     }
